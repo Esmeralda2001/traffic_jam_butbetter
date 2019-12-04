@@ -5,12 +5,18 @@ using UnityEngine;
 public class Car : MonoBehaviour
 {
     public double speed;
+    public int maxRoadSpeed;
 
-    private GameObject road = GameObject.FindGameObjectWithTag("road");
+    private Rigidbody rb;
+    private Vector3 frontalrange;
+    private int minDistance;
+
     // Start is called before the first frame update
  
     void Start()
     {
+        rb = GetComponent<Rigidbody>();
+        GameObject road = GameObject.FindGameObjectWithTag("road");
         int maxRoadSpeed = road.GetComponent<Road>().maxSpeed;
         SetInitialSpeed(maxRoadSpeed); 
 
@@ -19,7 +25,14 @@ public class Car : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        frontalrange = transform.TransformDirection(Vector3.left);
+        float temp = (float)this.speed;
+        rb.velocity += new Vector3(temp,0,0);
+        if (Physics.Raycast(transform.position, frontalrange, minDistance)) 
+        {
+            print("LMAO");
+            //do whatever
+        }
     }
 
     void SetInitialSpeed(int max)
