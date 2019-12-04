@@ -54,6 +54,6 @@ public class Car : MonoBehaviour
 
     void DecreaseSpeed()
     {
-
+        print("Random"); 
     }
 }
