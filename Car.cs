@@ -52,8 +52,14 @@ public class Car : MonoBehaviour
         print(randNormal);
     }
 
-    void DecreaseSpeed()
+    void CheckDistanceSpeed(double distance)
     {
-        print("Random"); 
+        double speedMeterSec = this.speed / 3.6;
+        double minDistance = speedMeterSec * 2; 
+
+        if (minDistance > distance)
+        {
+            this.speed = (distance / 2) * 3.6; 
+        }
     }
 }
