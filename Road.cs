@@ -7,32 +7,47 @@ public class Road : MonoBehaviour
     public GameObject carPrefab;
     public int lanes = 1;
     public int carCount = 10;
-    public int maxSpeed;
+    private int currentCarCount = 0;
+
+    public int maxSpeed = 5;
+    public int std = 1;
+
+    private System.Random rnd = new System.Random();
     
     private List<Vector3> spawnLocations = new List<Vector3>();
+    
     // Start is called before the first frame update
     void Start()
     {
         setSpawnLocations();
-        spawnCars();
+        
+        // !NOTE: Update currentCarCount so we can update it without updating the unity options UI
+        this.currentCarCount = this.carCount;
+
+        StartCoroutine(spawnCars());
     }
 
-    void spawnCars() {
-        System.Random rnd = new System.Random();
-        for (int i = 0; i < carCount; i++)
+    IEnumerator spawnCars()
+    {
+        int r = rnd.Next(this.spawnLocations.Count);
+        Vector3 spawnLocation = this.spawnLocations[r];
+
+        for (int i = 0; i < this.currentCarCount; i++)
         {
-            int r = rnd.Next(this.spawnLocations.Count);
-            Vector3 spawnLocation = this.spawnLocations[r];
-            Debug.Log(spawnLocation);
-            Instantiate(carPrefab, spawnLocation, Quaternion.identity);
+            if (Physics.OverlapSphere(spawnLocation, 0.5F).Length <= 1) {
+                Instantiate(carPrefab, spawnLocation, Quaternion.identity);
+            } else {
+                yield return new WaitForSeconds(1);
+                this.currentCarCount += 1;
+            }
         }
-            
     }
 
-    void setSpawnLocations() {
+    void setSpawnLocations()
+    {
         float groundLevel = 0.5F;
         float lanePadding = 6.7F;
-        float startOfLevel = 50F;
+        float startOfLevel = 49F;
 
         Vector3 midLane = new Vector3(startOfLevel, groundLevel, 0);
         Vector3 rightLane = new Vector3(startOfLevel, groundLevel, lanePadding);
@@ -57,11 +72,5 @@ public class Road : MonoBehaviour
         }
 
         this.spawnLocations.ForEach(lane => Debug.Log(lane));
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 }
