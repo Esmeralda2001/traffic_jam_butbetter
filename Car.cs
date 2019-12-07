@@ -1,71 +1,76 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class Car : MonoBehaviour
 {
-    public double speed;
 
     private Rigidbody rb;
-    private Vector3 frontalrange;
     private int minDistance;
 
-    private SphereCollider coll;
     private Road road;
+
+    int maxRoadSpeed; 
 
     // Start is called before the first frame update
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        this.coll = rb.GetComponent<SphereCollider>();
         
         this.road = GameObject.FindGameObjectWithTag("road").GetComponent<Road>();
-        int maxRoadSpeed = this.road.maxSpeed;
+        maxRoadSpeed = this.road.maxSpeed;
         double initialSpeed = SetInitialSpeed(maxRoadSpeed);
-        Vector3 force = new Vector3((float)-initialSpeed, 0, 0);
-        this.rb.AddForce(force);
-        // this.rb.velocity = new Vector3((float) -initialSpeed, 0, 0);
+        Vector3 force = new Vector3((float) -initialSpeed, 0, 0);
+        
+        this.rb.velocity = force;
     }
 
     // Update is called once per frame
     void FixedUpdate()
     {
-        // // frontalrange = transform.TransformDirection(Vector3.left);
-        // // float temp = (float)this.speed;
-        // // rb.velocity += new Vector3(temp,0,0);
-        // // Physics.Raycast(transform.position, frontalrange, minDistance);
-
-        // Debug.Log(getClosestCar());
         int carCount = GameObject.FindGameObjectsWithTag("car").Length;
 
         if (carCount > 1) {
-            double speed = CheckDistanceSpeed(getClosestCar());
-            // Debug.Log(speed);
+            float brakingForce = CheckDistanceSpeed(getClosestCar());
+            Vector3 velo = this.rb.velocity;
 
-            if (speed > 0) {
-                // this.rb.velocity = new Vector3((float) speed, 0,0);
-                this.rb.AddForce(new Vector3((float) -speed, 0, 0));
+            if (brakingForce >= 0) {
+                this.rb.velocity = new Vector3(velo.x + brakingForce, 0, velo.z); //(velo.x + brakingForce, 0, velo.z);
+            }else if (brakingForce < 0)
+            {
+                this.rb.velocity = new Vector3(velo.x + brakingForce, 0, velo.z);
             }
         }
     }
 
     float getClosestCar() {
         GameObject[] cars = GameObject.FindGameObjectsWithTag("car");
-        float closestCar = 0F;
-
+        List<float> distances = new List<float>();
+        float minDistance = 500F; 
         foreach (GameObject car in cars)
         {
-            float currentX = this.rb.transform.position.x;
-            float otherX = car.transform.position.x;
-            float distance = otherX - currentX;
-            
-            if (distance > closestCar) {
-                closestCar = distance;
+            Vector3 otherCar = car.transform.position;
+            Vector3 thisCar = this.rb.transform.position;
+
+            float angle = Vector3.Angle(thisCar, otherCar);
+
+            if (angle < 5) {
+                if (thisCar.x > otherCar.x) {
+                    float distance = System.Math.Abs(otherCar.x - thisCar.x);
+                    
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                    }
+                }
             }
         }
-
-        return closestCar;
+        
+        //Debug.Log(minDistance);
+        return minDistance;
     }
+
+    
 
     double SetInitialSpeed(int max)
     {
@@ -78,7 +83,7 @@ public class Car : MonoBehaviour
         double u1 = 1.0 - rand.NextDouble();
         double u2 = 1.0 - rand.NextDouble();
         double randStdNormal = System.Math.Sqrt(-2.0 * System.Math.Log(u1)) *
-                         System.Math.Sin(2.0 * System.Math.PI * u2);
+                        System.Math.Sin(2.0 * System.Math.PI * u2);
         double randNormal = averageSpeed + std * randStdNormal;
 
         if (randNormal > max) {
@@ -90,22 +95,18 @@ public class Car : MonoBehaviour
         }
     }
 
-    // // double CheckDistanceSpeed(double distance)
-    // // {
-    // //     double speedMeterSec = this.rb.velocity.x / 3.6;
-    // //     double minDistance = speedMeterSec * 2; 
-    // //
-    // //     if (minDistance > distance) {
-    // //         return ((distance / 2) * 3.6);// - this.road.std; 
-    // //     } else {
-    // //         return this.rb.velocity.x;
-    // //     }
-    // // }
-
-    private float CheckDistanceSpeed(float targetPos)
+    private float CheckDistanceSpeed(float distance)
     {
-        float remainingDistance = (targetPos - this.rb.position.x);
-        float brake = 0.5f * this.rb.velocity.sqrMagnitude / remainingDistance;
-        return brake;
+        print(distance);
+
+        if (distance != -1 && distance < 15 && this.rb.velocity.x < -maxRoadSpeed+90) {
+            Debug.DrawLine(this.rb.position, new Vector3(this.rb.position.x,10,this.rb.position.z), Color.red);
+            return this.rb.velocity.sqrMagnitude / 250;
+        }else if (distance != -1 && distance > 40 && distance != 500 &&  this.rb.velocity.x > -maxRoadSpeed)
+        {
+            return -(this.rb.velocity.sqrMagnitude / 800);
+        }
+
+        return 0F;
     }
 }
