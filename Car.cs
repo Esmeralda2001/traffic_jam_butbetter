@@ -1,78 +1,84 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
+﻿using UnityEngine;
 
+
+/// <summary>
+/// Class <c>Car</c> the agent that is controlling our "car" (3d sphere).
+/// </summary>
 public class Car : MonoBehaviour
 {
+    [System.NonSerialized]
+    public int lane;
 
     private Rigidbody rb;
-    private int minDistance;
-
     private Road road;
 
-    int maxRoadSpeed; 
+    private double initialSpeed;
+    private bool finishedCourse = false;
 
-    // Start is called before the first frame update
     void Start()
     {
-        rb = GetComponent<Rigidbody>();
+        this.rb = GetComponent<Rigidbody>();
         
         this.road = GameObject.FindGameObjectWithTag("road").GetComponent<Road>();
-        maxRoadSpeed = this.road.maxSpeed;
-        double initialSpeed = SetInitialSpeed(maxRoadSpeed);
-        Vector3 force = new Vector3((float) -initialSpeed, 0, 0);
-        
-        this.rb.velocity = force;
+        this.initialSpeed = CalculateInitialSpeed(this.road.maxSpeed);
+
+        Vector3 initialVelocity = new Vector3((float) -this.initialSpeed, 0, 0);
+        this.rb.velocity = initialVelocity;
     }
 
-    // Update is called once per frame
     void FixedUpdate()
     {
+        if (!finishedCourse && this.rb.position.x <= -940) {
+            this.road.throughput++;
+            this.finishedCourse = true;
+        }
+
         int carCount = GameObject.FindGameObjectsWithTag("car").Length;
 
-        if (carCount > 1) {
-            float brakingForce = CheckDistanceSpeed(getClosestCar());
-            Vector3 velo = this.rb.velocity;
+        if (carCount > 1 && !finishedCourse) {
+            float closestCarDistance = getClosestCarDistance();
 
-            if (brakingForce >= 0) {
-                this.rb.velocity = new Vector3(velo.x + brakingForce, 0, velo.z); //(velo.x + brakingForce, 0, velo.z);
-            }else if (brakingForce < 0)
-            {
+            // !Note distance -1 means it's unset
+            if (closestCarDistance != -1) {
+                float brakingForce = CalculateVelocity(closestCarDistance);
+                Vector3 velo = this.rb.velocity;
+
                 this.rb.velocity = new Vector3(velo.x + brakingForce, 0, velo.z);
             }
         }
     }
 
-    float getClosestCar() {
+    float getClosestCarDistance() {
         GameObject[] cars = GameObject.FindGameObjectsWithTag("car");
-        List<float> distances = new List<float>();
-        float minDistance = 500F; 
+
+        float minDistance = -1F; 
         foreach (GameObject car in cars)
         {
+            Car otherCarObject = car.GetComponent<Car>();
             Vector3 otherCar = car.transform.position;
             Vector3 thisCar = this.rb.transform.position;
 
             float angle = Vector3.Angle(thisCar, otherCar);
-
-            if (angle < 5) {
-                if (thisCar.x > otherCar.x) {
+            
+            if (!otherCarObject.finishedCourse) {
+                if (thisCar.x > otherCar.x && this.lane == otherCarObject.lane) {
                     float distance = System.Math.Abs(otherCar.x - thisCar.x);
                     
-                    if (distance < minDistance) {
+                    if (minDistance == -1F){
+                        minDistance = distance;
+                    } else if (distance < minDistance) {
                         minDistance = distance;
                     }
                 }
             }
         }
         
-        //Debug.Log(minDistance);
         return minDistance;
     }
 
     
 
-    double SetInitialSpeed(int max)
+    double CalculateInitialSpeed(int max)
     {
         int std = this.road.std; // 10km/h was randomly chosen because we do not know how big the differences in speed are between drivers exactly
         int averageSpeed = max - std; // On average not everyone will be exactly at the speed limit. People prefer to stay a little below it
@@ -95,16 +101,17 @@ public class Car : MonoBehaviour
         }
     }
 
-    private float CheckDistanceSpeed(float distance)
+    /// <summary> hi <summary>
+    private float CalculateVelocity(float distance)
     {
-        print(distance);
+        int brakeDistance = 15;
 
-        if (distance != -1 && distance < 15 && this.rb.velocity.x < -maxRoadSpeed+90) {
+        if (distance < brakeDistance) {
             Debug.DrawLine(this.rb.position, new Vector3(this.rb.position.x,10,this.rb.position.z), Color.red);
-            return this.rb.velocity.sqrMagnitude / 250;
-        }else if (distance != -1 && distance > 40 && distance != 500 &&  this.rb.velocity.x > -maxRoadSpeed)
-        {
-            return -(this.rb.velocity.sqrMagnitude / 800);
+            return this.rb.velocity.sqrMagnitude / 250 *.8F;
+        } else if (distance > 40 &&  this.rb.velocity.x > -this.road.maxSpeed) {
+            // this.rb.AddForce(new Vector3(-5,0,0));
+            return -5F;
         }
 
         return 0F;
