@@ -48,6 +48,7 @@ public class Car : MonoBehaviour
         }
     }
 
+    /// <summary> This function gets the car in front of our current car (if there is a car in front of it at all)</summary>
     float getClosestCarDistance() {
         GameObject[] cars = GameObject.FindGameObjectsWithTag("car");
 
@@ -76,7 +77,9 @@ public class Car : MonoBehaviour
         return minDistance;
     }
 
-    
+    /// <summary> This function calculates the starting (initial) speed for the car
+    ///    (<paramref name="max"/>).</summary>
+    /// <param><c>max</c>This is the max speed a car can have on this road</param>
 
     double CalculateInitialSpeed(int max)
     {
@@ -101,7 +104,10 @@ public class Car : MonoBehaviour
         }
     }
 
-    /// <summary> hi <summary>
+    /// <summary> This function calculates the new velocity for a car 
+    ///    (<paramref name="distance"/>).</summary>
+    /// <param><c>distance</c> is the new distance from This car to the car in front of it</param>
+
     private float CalculateVelocity(float distance)
     {
         int brakeDistance = 15;
